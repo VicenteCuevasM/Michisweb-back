@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: usuario
+      POSTGRES_PASSWORD: contraseña
+      POSTGRES_DB: cesfam
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+
