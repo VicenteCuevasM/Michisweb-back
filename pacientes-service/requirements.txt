@@ -1,0 +1,7 @@
+psycopg[binary,async]
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+python-dotenv
+pydantic[email]

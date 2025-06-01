@@ -53,3 +53,15 @@ services:
         - db
       ports:
         - "3002:3002"
+
+  pacientes-service:
+    build:
+      context: ./pacientes-service
+    container_name: pacientes-service
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+psycopg://usuario:contraseña@db:5432/cesfam
+    depends_on:
+      - db
+    ports:
+      - "3003:3003"
