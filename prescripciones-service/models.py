@@ -14,6 +14,7 @@ class Usuario(Base):
     contrasena = Column(String(100))
     rol = Column(String(50), nullable=False)
 
+    #prescripciones-service
     prescripciones = relationship("Prescripcion", back_populates="medico", foreign_keys="Prescripcion.id_medico")
 
 
@@ -52,7 +53,10 @@ class Paciente(Base):
     numero = Column(Integer)
     correo = Column(String(100))
 
+    #prescripciones-service
     prescripciones = relationship("Prescripcion", back_populates="paciente", foreign_keys="Prescripcion.id_paciente")
+    #reservas-service
+    reservas = relationship("Reserva", back_populates="paciente", foreign_keys="Reserva.id_paciente")
 
 
 class PrincipioActivo(Base):
@@ -68,6 +72,9 @@ class Medicamento(Base):
 
     id_medicamento = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
     nombre = Column(String(100))
+
+    #reservas-service
+    reservas_medicamentos = relationship("ReservaMedicamento", back_populates="medicamento")
 
 
 class MedicamentoPrincipio(Base):
@@ -100,8 +107,8 @@ class Prescripcion(Base):
     id_medico = Column(UUID(as_uuid=True), ForeignKey("usuario.id"))
     id_paciente = Column(UUID(as_uuid=True), ForeignKey("paciente.id_paciente"))
 
+    #prescripciones-service
     principios = relationship("PrescripcionPrincipio", back_populates="prescripcion")
-
     medico = relationship("Usuario", back_populates="prescripciones", foreign_keys=[id_medico])
     paciente = relationship("Paciente", back_populates="prescripciones", foreign_keys=[id_paciente])
 
@@ -114,6 +121,7 @@ class PrescripcionPrincipio(Base):
     duracion = Column(String(100))
     frecuencia = Column(String(100))
 
+    #prescripciones-service
     prescripcion = relationship("Prescripcion", back_populates="principios")
 
 
@@ -127,6 +135,7 @@ class Receta(Base):
     fecha_emision = Column(TIMESTAMP)
     estado = Column(String(50))
 
+    #prescripciones-service
     medico = relationship("Usuario", foreign_keys=[id_medico])
     paciente = relationship("Paciente", foreign_keys=[id_paciente])
     prescripcion = relationship("Prescripcion", foreign_keys=[id_prescripcion])
@@ -140,6 +149,10 @@ class Reserva(Base):
     fecha = Column(TIMESTAMP)
     estado = Column(String(50))
 
+    #reserva-service
+    medicamentos = relationship("ReservaMedicamento", back_populates="reserva")
+    paciente = relationship("Paciente", back_populates="reservas", foreign_keys=[id_paciente])
+
 
 class ReservaMedicamento(Base):
     __tablename__ = "reserva_medicamento"
@@ -147,6 +160,10 @@ class ReservaMedicamento(Base):
     id_reserva = Column(UUID(as_uuid=True), ForeignKey("reserva.id_reserva"), primary_key=True)
     id_medicamento = Column(UUID(as_uuid=True), ForeignKey("medicamento.id_medicamento"), primary_key=True)
     cantidad = Column(Integer)
+
+    #reserva-service
+    reserva = relationship("Reserva", back_populates="medicamentos")
+    medicamento = relationship("Medicamento", back_populates="reservas_medicamentos")
 
 
 class Entrega(Base):

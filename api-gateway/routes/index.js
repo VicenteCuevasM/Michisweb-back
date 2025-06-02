@@ -16,4 +16,9 @@ export default function setupRoutes(app) {
     target: process.env.PACIENTES_SERVICE_URL,
     changeOrigin: true,
   }));
+
+  app.use('/reservas', createProxyMiddleware({
+    target: process.env.RESERVAS_SERVICE_URL,
+    changeOrigin: true,
+  }));
 }
