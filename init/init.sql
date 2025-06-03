@@ -52,7 +52,10 @@ CREATE TABLE Principio_activo (
 -- Tabla Medicamento
 CREATE TABLE Medicamento (
     ID_medicamento UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre VARCHAR(100)
+    nombre VARCHAR(255),
+    codigo_barras UUID UNIQUE,
+    dosis_concentracion VARCHAR(100),
+    via_administracion VARCHAR(100)
 );
 
 -- Tabla Medicamento_principio
@@ -64,7 +67,7 @@ CREATE TABLE Medicamento_principio (
 
 -- Tabla Medicamento_lote
 CREATE TABLE Medicamento_lote (
-    codigo_barras UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_lote UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ID_medicamento UUID REFERENCES Medicamento(ID_medicamento),
     lote VARCHAR(50),
     fecha_vencimiento TIMESTAMP,
@@ -72,9 +75,7 @@ CREATE TABLE Medicamento_lote (
     cantidad_defectuosa INT,
     cantidad_en_idea INT,
     cantidad_en_estado INT,
-    cantidad_envase_roto INT,
-    dosis_concentracion VARCHAR(100),
-    via_administracion VARCHAR(100)
+    cantidad_envase_roto INT
 );
 
 -- Tabla Prescripcion

@@ -31,10 +31,10 @@ INSERT INTO Principio_activo (nombre, categoria) VALUES
 ('Paracetamol', 'Analgésico'),
 ('Amoxicilina', 'Antibiótico');
 
--- Insertar Medicamentos
-INSERT INTO Medicamento (nombre) VALUES
-('Dolocam'),
-('Amoxil');
+-- Insertar Medicamentos con su código de barras, dosis y vía de administración
+INSERT INTO Medicamento (nombre, codigo_barras, dosis_concentracion, via_administracion) VALUES
+('Dolocam', gen_random_uuid(), '500mg', 'Oral'),
+('Amoxil', gen_random_uuid(), '250mg', 'Oral');
 
 -- Relación Medicamento - Principio activo
 INSERT INTO Medicamento_principio (ID_medicamento, ID_principio)
@@ -43,13 +43,13 @@ FROM Medicamento m, Principio_activo p
 WHERE (m.nombre = 'Dolocam' AND p.nombre = 'Paracetamol')
    OR (m.nombre = 'Amoxil' AND p.nombre = 'Amoxicilina');
 
--- Insertar Lotes de Medicamento
+-- Insertar lote para el medicamento Dolocam
 INSERT INTO Medicamento_lote (
-    ID_medicamento, lote, fecha_vencimiento, cantidad, cantidad_defectuosa,
-    cantidad_en_idea, cantidad_en_estado, cantidad_envase_roto,
-    dosis_concentracion, via_administracion
+    ID_medicamento, lote, fecha_vencimiento, cantidad,
+    cantidad_defectuosa, cantidad_en_idea, cantidad_en_estado, cantidad_envase_roto
 )
-SELECT m.ID_medicamento, 'LOTE-001', '2026-01-01', 100, 2, 0, 0, 1, '500mg', 'Oral'
+SELECT m.ID_medicamento, 'LOTE-001', '2026-01-01', 100,
+       2, 0, 0, 1
 FROM Medicamento m
 WHERE m.nombre = 'Dolocam';
 

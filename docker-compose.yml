@@ -77,3 +77,15 @@ services:
       - db
     ports:
       - "3004:3004"
+
+  medicamentos-service:
+    build:
+      context: ./medicamentos-service
+    container_name: medicamentos-service
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+psycopg://usuario:contraseña@db:5432/cesfam
+    depends_on:
+      - db
+    ports:
+      - "3005:3005"
