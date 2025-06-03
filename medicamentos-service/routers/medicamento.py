@@ -4,8 +4,8 @@ from uuid import UUID
 from typing import List
 from database import get_session
 import crud.medicamento as crud
-from schemas.medicamento import LoteProximoVencimientoOut, ReporteDefecto, MedicamentoInfo, LoteCreateBase, LoteOut, MedicamentoOut, PrincipioActivoOut, PrincipioActivoDetalleOut, EntregaMedicamento
-from crud.medicamento import get_lote_proximo_vencimiento_info, reportar_defecto_en_lote, get_medicamento_por_codigo_barras, crear_lote_por_codigo, obtener_detalle_por_principio, obtener_todos_los_principios, entregar_medicamento
+from schemas.medicamento import ReservarCantidad, LoteProximoVencimientoOut, ReporteDefecto, MedicamentoInfo, LoteCreateBase, LoteOut, MedicamentoOut, PrincipioActivoOut, PrincipioActivoDetalleOut, EntregaMedicamento
+from crud.medicamento import reservar_medicamento, get_lote_proximo_vencimiento_info, reportar_defecto_en_lote, get_medicamento_por_codigo_barras, crear_lote_por_codigo, obtener_detalle_por_principio, obtener_todos_los_principios, entregar_medicamento
 
 router = APIRouter(prefix="/medicamentos", tags=["Medicamentos"])
 
@@ -71,3 +71,11 @@ async def obtener_lote_proximo_vencimiento_con_info(
     if info is None:
         raise HTTPException(status_code=404, detail="No hay lotes disponibles para este principio activo")
     return info
+
+@router.post("/lote/{id_lote}/reservar")
+async def reservar_cantidad_lote(
+    id_lote: UUID,
+    entrada: ReservarCantidad,  # Pydantic model con 'cantidad: int'
+    session: AsyncSession = Depends(get_session)
+):
+    return await reservar_medicamento(session, id_lote, entrada.cantidad)

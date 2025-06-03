@@ -45,10 +45,10 @@ WHERE (m.nombre = 'Dolocam' AND p.nombre = 'Paracetamol')
 
 -- Insertar lote para el medicamento Dolocam
 INSERT INTO Medicamento_lote (
-    ID_medicamento, lote, fecha_vencimiento, cantidad,
+    ID_medicamento, lote, fecha_vencimiento, cantidad, cantidad_reservada,
     cantidad_defectuosa, cantidad_en_idea, cantidad_en_estado, cantidad_envase_roto
 )
-SELECT m.ID_medicamento, 'LOTE-001', '2026-01-01', 100,
+SELECT m.ID_medicamento, 'LOTE-001', '2026-01-01', 100, 5,
        2, 0, 0, 1
 FROM Medicamento m
 WHERE m.nombre = 'Dolocam';

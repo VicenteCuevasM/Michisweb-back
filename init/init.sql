@@ -72,6 +72,7 @@ CREATE TABLE Medicamento_lote (
     lote VARCHAR(50),
     fecha_vencimiento TIMESTAMP,
     cantidad INT,
+    cantidad_reservada INT,
     cantidad_defectuosa INT,
     cantidad_en_idea INT,
     cantidad_en_estado INT,

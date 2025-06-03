@@ -92,6 +92,7 @@ class MedicamentoLote(Base):
     lote = Column(String(50))
     fecha_vencimiento = Column(TIMESTAMP)
     cantidad = Column(Integer)
+    cantidad_reservada = Column(Integer)
     cantidad_defectuosa = Column(Integer)
     cantidad_en_idea = Column(Integer)
     cantidad_en_estado = Column(Integer)

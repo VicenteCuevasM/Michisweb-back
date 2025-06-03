@@ -29,6 +29,7 @@ async def crear_lote_por_codigo(session: AsyncSession, data: LoteCreateBase):
         select(Medicamento).where(Medicamento.codigo_barras == data.codigo_barras)
     )
     medicamento = result.scalar_one_or_none()
+    data.cantidad_reservada = 0
 
     # Si no hay defectuosos, inicializamos todos esos campos en 0
     if not data.hay_defectuosos:
@@ -159,3 +160,20 @@ async def get_lote_proximo_vencimiento_info(session: AsyncSession, id_principio:
         "dosis_concentracion": medicamento.dosis_concentracion,
         "numero_lote": lote.lote,
     }
+
+async def reservar_medicamento(session, id_lote: UUID, cantidad: int):
+    result = await session.execute(
+        select(MedicamentoLote).where(MedicamentoLote.id_lote == id_lote)
+    )
+    lote = result.scalar_one_or_none()
+
+    if lote is None:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+
+    if lote.cantidad < cantidad:
+        raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la reserva")
+
+    lote.cantidad_reservada += cantidad
+    await session.commit()
+    await session.refresh(lote)
+    return lote

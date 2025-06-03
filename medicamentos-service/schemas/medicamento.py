@@ -18,6 +18,7 @@ class LoteCreateBase(BaseModel):
     fecha_vencimiento: datetime
     cantidad: int
     hay_defectuosos: bool = False  # <- checkbox del usuario
+    cantidad_reservada: int
 
     # estos campos se incluirán solo si hay defectuosos
     cantidad_defectuosa: int | None = None
@@ -100,3 +101,6 @@ class LoteProximoVencimientoOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+class ReservarCantidad(BaseModel):
+    cantidad: int
