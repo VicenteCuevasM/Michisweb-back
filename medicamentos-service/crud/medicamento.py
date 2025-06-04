@@ -92,8 +92,8 @@ async def obtener_detalle_por_principio(session: AsyncSession, id_principio: UUI
         "medicamentos": medicamentos
     }
 
-async def entregar_medicamento(session, id_lote: UUID, cantidad: int):
-    result = await session.execute(select(MedicamentoLote).where(MedicamentoLote.id_lote == id_lote))
+async def entregar_medicamento(session, lote: str, cantidad: int):
+    result = await session.execute(select(MedicamentoLote).where(MedicamentoLote.lote == lote))
     lote = result.scalar_one_or_none()
 
     if lote is None:
@@ -107,9 +107,9 @@ async def entregar_medicamento(session, id_lote: UUID, cantidad: int):
     await session.refresh(lote)
     return lote
 
-async def reportar_defecto_en_lote(session: AsyncSession, id_lote: UUID, tipo: str, cantidad: int):
+async def reportar_defecto_en_lote(session: AsyncSession, lote: str, tipo: str, cantidad: int):
     result = await session.execute(
-        select(MedicamentoLote).where(MedicamentoLote.id_lote == id_lote)
+        select(MedicamentoLote).where(MedicamentoLote.lote == lote)
     )
     lote = result.scalar_one_or_none()
     
@@ -161,9 +161,9 @@ async def get_lote_proximo_vencimiento_info(session: AsyncSession, id_principio:
         "numero_lote": lote.lote,
     }
 
-async def reservar_medicamento(session, id_lote: UUID, cantidad: int):
+async def reservar_medicamento(session, lote: str, cantidad: int):
     result = await session.execute(
-        select(MedicamentoLote).where(MedicamentoLote.id_lote == id_lote)
+        select(MedicamentoLote).where(MedicamentoLote.lote == lote)
     )
     lote = result.scalar_one_or_none()
 

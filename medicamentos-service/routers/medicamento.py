@@ -49,18 +49,18 @@ async def detalle_principio(id_principio: UUID, session: AsyncSession = Depends(
         raise HTTPException(status_code=404, detail="Principio activo no encontrado")
     return detalle
 
-@router.post("/lotes/{id_lote}/entrega")
-async def registrar_entrega(id_lote: UUID, datos: EntregaMedicamento, session: AsyncSession = Depends(get_session)):
-    lote_actualizado = await entregar_medicamento(session, id_lote, datos.cantidad)
+@router.post("/lotes/{lote}/entrega")
+async def registrar_entrega(lote: str, datos: EntregaMedicamento, session: AsyncSession = Depends(get_session)):
+    lote_actualizado = await entregar_medicamento(session, lote, datos.cantidad)
     return lote_actualizado
 
-@router.post("/lotes/{id_lote}/reportar_defecto", response_model=LoteOut)
+@router.post("/lotes/{lote}/reportar_defecto", response_model=LoteOut)
 async def reportar_defecto_lote(
-    id_lote: UUID,
+    lote: str,
     data: ReporteDefecto,
     session: AsyncSession = Depends(get_session)
 ):
-    return await reportar_defecto_en_lote(session, id_lote, data.tipo, data.cantidad)
+    return await reportar_defecto_en_lote(session, lote, data.tipo, data.cantidad)
 
 @router.get("/principios/{id_principio}/proximo_vencimiento", response_model=LoteProximoVencimientoOut)
 async def obtener_lote_proximo_vencimiento_con_info(
@@ -72,10 +72,10 @@ async def obtener_lote_proximo_vencimiento_con_info(
         raise HTTPException(status_code=404, detail="No hay lotes disponibles para este principio activo")
     return info
 
-@router.post("/lote/{id_lote}/reservar")
+@router.post("/lotes/{lote}/reservar")
 async def reservar_cantidad_lote(
-    id_lote: UUID,
+    lote: str,
     entrada: ReservarCantidad,  # Pydantic model con 'cantidad: int'
     session: AsyncSession = Depends(get_session)
 ):
-    return await reservar_medicamento(session, id_lote, entrada.cantidad)
+    return await reservar_medicamento(session, lote, entrada.cantidad)
