@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: usuario
-      POSTGRES_PASSWORD: contraseña
+      POSTGRES_PASSWORD: contrasena
       POSTGRES_DB: cesfam
     volumes:
       - ./init:/docker-entrypoint-initdb.d
@@ -18,51 +18,59 @@ services:
     build: ./login-service
     container_name: login-service
     restart: always
-    ports:
-      - "3000:3000"
     depends_on:
       - db
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=usuario
-      - DB_PASSWORD=contraseña
-      - DB_NAME=cesfam
-      - JWT_SECRET=supersecreto123
-      
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: usuario
+      DB_PASSWORD: contrasena
+      DB_NAME: cesfam
+      JWT_SECRET: supersecreto123
+    ports:
+      - "3000:3000"
+
   api-gateway:
     build: ./api-gateway
     container_name: api-gateway
     restart: always
-    ports:
-      - "8080:8080"
     depends_on:
       - login-service
+      - prescripciones-service
+      - pacientes-service
+      - reservas-service
+      - medicamentos-service
     environment:
-      - JWT_SECRET=supersecreto123
-      - LOGIN_SERVICE_URL=http://login-service:3000
+      JWT_SECRET: supersecreto123
+      LOGIN_SERVICE_URL: http://login-service:3000
+      PRESCRIPCION_SERVICE_URL: http://prescripciones-service:3002
+      PACIENTES_SERVICE_URL: http://pacientes-service:3003
+      RESERVAS_SERVICE_URL: http://reservas-service:3004
+      MEDICAMENTOS_SERVICE_URL: http://medicamentos-service:3005
+    ports:
+      - "8080:8080"
 
   prescripciones-service:
-      build:
-        context: ./prescripciones-service
-      container_name: prescripciones-service
-      restart: always
-      environment:
-        - DATABASE_URL=postgresql+psycopg://usuario:contraseña@db:5432/cesfam
-      depends_on:
-        - db
-      ports:
-        - "3002:3002"
+    build:
+      context: ./prescripciones-service
+    container_name: prescripciones-service
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql+asyncpg://usuario:contrasena@db:5432/cesfam
+    ports:
+      - "3002:3002"
 
   pacientes-service:
     build:
       context: ./pacientes-service
     container_name: pacientes-service
     restart: always
-    environment:
-      - DATABASE_URL=postgresql+psycopg://usuario:contraseña@db:5432/cesfam
     depends_on:
       - db
+    environment:
+      DATABASE_URL: postgresql+asyncpg://usuario:contrasena@db:5432/cesfam
     ports:
       - "3003:3003"
 
@@ -71,10 +79,10 @@ services:
       context: ./reservas-service
     container_name: reservas-service
     restart: always
-    environment:
-      - DATABASE_URL=postgresql+psycopg://usuario:contraseña@db:5432/cesfam
     depends_on:
       - db
+    environment:
+      DATABASE_URL: postgresql+asyncpg://usuario:contrasena@db:5432/cesfam
     ports:
       - "3004:3004"
 
@@ -83,9 +91,23 @@ services:
       context: ./medicamentos-service
     container_name: medicamentos-service
     restart: always
-    environment:
-      - DATABASE_URL=postgresql+psycopg://usuario:contraseña@db:5432/cesfam
     depends_on:
       - db
+    environment:
+      DATABASE_URL: postgresql+asyncpg://usuario:contrasena@db:5432/cesfam
     ports:
       - "3005:3005"
+
+  entrega-service:
+    build:
+      context: ./entrega-service
+    container_name: entrega-service
+    restart: always
+    depends_on:
+      - db
+      - medicamentos-service
+    environment:
+      DATABASE_URL: postgresql+asyncpg://usuario:contrasena@db:5432/cesfam
+      MEDICAMENTOS_BASE_URL: http://medicamentos-service:3005
+    ports:
+      - "3006:8000"
