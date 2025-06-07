@@ -6,7 +6,7 @@ from models import Base, Prescripcion, PrescripcionPrincipio, Receta
 from database import engine, get_session
 from pydantic import BaseModel
 from typing import List
-from datetime import datetime, timezone
+import datetime as dt
 import uuid
 
 app = FastAPI()
@@ -36,7 +36,7 @@ class PrescripcionCreate(BaseModel):
 
 
 # Crear prescripcion
-@app.post("/prescripciones")
+@app.post("/prescripcion")
 async def crear_prescripcion(
     data: PrescripcionCreate, db: AsyncSession = Depends(get_session)
 ):
@@ -60,7 +60,7 @@ async def crear_prescripcion(
     return {"id_prescripcion": prescripcion.id_prescripcion}
 
 # Obtener prescripciones de 1 paciente
-@app.get("/prescripciones/paciente/{id_paciente}")
+@app.get("/prescripcion/paciente/{id_paciente}")
 async def obtener_prescripciones(
     id_paciente: uuid.UUID, db: AsyncSession = Depends(get_session)
 ):
@@ -134,7 +134,7 @@ async def obtener_prescripcion(
     }
 
 #Obtener todas las prescripciones
-@app.get("/prescripciones")
+@app.get("/prescripcion")
 async def obtener_todas_prescripciones(db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(Prescripcion)
@@ -168,7 +168,7 @@ async def obtener_todas_prescripciones(db: AsyncSession = Depends(get_session)):
     return response
 
 # Agregar 1 receta de la prescripcion
-@app.post("/prescripciones/agregar-receta/{id_prescripcion}")
+@app.post("/prescripcion/agregar-receta/{id_prescripcion}")
 async def agregar_receta(id_prescripcion: uuid.UUID, db: AsyncSession = Depends(get_session)):
     # Buscar prescripción
     result = await db.execute(
@@ -183,7 +183,7 @@ async def agregar_receta(id_prescripcion: uuid.UUID, db: AsyncSession = Depends(
         id_prescripcion=prescripcion.id_prescripcion,
         id_paciente=prescripcion.id_paciente,
         id_medico=prescripcion.id_medico,
-        fecha_emision=datetime.now(timezone.UTC),
+        fecha_emision=dt.datetime.now(dt.timezone.utc),
         estado="pendiente"
     )
     db.add(receta)
@@ -192,7 +192,7 @@ async def agregar_receta(id_prescripcion: uuid.UUID, db: AsyncSession = Depends(
 
 
 # Obtener todas las recetas
-@app.get("/recetas")
+@app.get("/receta")
 async def obtener_recetas(db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(Receta)
@@ -217,7 +217,7 @@ async def obtener_recetas(db: AsyncSession = Depends(get_session)):
     ]
 
 # Obtener 1 receta
-@app.get("/recetas/{id_receta}")
+@app.get("/receta/{id_receta}")
 async def obtener_receta(id_receta: uuid.UUID, db: AsyncSession = Depends(get_session)):
     result = await db.execute(
         select(Receta)
