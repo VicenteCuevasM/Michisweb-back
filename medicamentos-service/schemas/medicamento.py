@@ -1,7 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, Field
 from uuid import UUID
-from typing import List
+from typing import List, Optional
 from enum import Enum
 
 class MedicamentoInfo(BaseModel):
@@ -20,12 +20,10 @@ class LoteCreateBase(BaseModel):
     hay_defectuosos: bool = False  # <- checkbox del usuario
     cantidad_reservada: int
 
-    # estos campos se incluirán solo si hay defectuosos
-    cantidad_defectuosa: int | None = None
-    cantidad_en_idea: int | None = None
-    cantidad_en_estado: int | None = None
-    cantidad_envase_roto: int | None = None
-
+    cantidad_defectuosa: Optional[int] = None
+    cantidad_en_idea: Optional[int] = None
+    cantidad_en_estado: Optional[int] = None
+    cantidad_envase_roto: Optional[int] = None
 
 class LoteOut(BaseModel):
     id_lote: UUID
@@ -104,3 +102,24 @@ class LoteProximoVencimientoOut(BaseModel):
 
 class ReservarCantidad(BaseModel):
     cantidad: int
+
+class EntregaRecetaItem(BaseModel):
+    id_principio: UUID
+    nombre_principio: str
+    nombre_medicamento: Optional[str] = None
+    numero_lote: Optional[str] = None
+    cantidad_solicitada: int
+    cantidad_entregada: int
+    estado: str  # "entregado" o "sin_stock"
+
+    class Config:
+        orm_mode = True
+
+class EntregaRecetaRequest(BaseModel):
+    id_receta: UUID
+    id_funcionario: UUID
+    rut_retiro: str
+    nombre_retiro: str
+
+    class Config:
+        orm_mode = True

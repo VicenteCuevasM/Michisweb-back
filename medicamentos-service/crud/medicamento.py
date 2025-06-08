@@ -3,8 +3,19 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from uuid import UUID
-from models import Medicamento, MedicamentoLote, PrincipioActivo, MedicamentoPrincipio
-from schemas.medicamento import MedicamentoInfo, LoteCreateBase
+from typing import List
+from datetime import datetime, timezone
+
+from models import (
+    Medicamento,
+    MedicamentoLote,
+    PrincipioActivo,
+    MedicamentoPrincipio,
+    Receta,
+    PrescripcionPrincipio,
+    Entrega
+)
+from schemas.medicamento import LoteCreateBase  # si ya lo necesitas abajo
 
 async def get_medicamentos(db: AsyncSession):
     result = await db.execute(select(Medicamento))
@@ -21,7 +32,6 @@ async def get_medicamento_por_codigo_barras(session: AsyncSession, codigo_barras
         select(Medicamento).where(Medicamento.codigo_barras == codigo_barras)
     )
     return result.scalars().first()
-
 
 async def crear_lote_por_codigo(session: AsyncSession, data: LoteCreateBase):
     # Buscar el medicamento por código de barras
@@ -92,44 +102,44 @@ async def obtener_detalle_por_principio(session: AsyncSession, id_principio: UUI
         "medicamentos": medicamentos
     }
 
-async def entregar_medicamento(session, lote: str, cantidad: int):
+async def entregar_medicamento(session: AsyncSession, lote: str, cantidad: int):
     result = await session.execute(select(MedicamentoLote).where(MedicamentoLote.lote == lote))
-    lote = result.scalar_one_or_none()
+    lote_obj = result.scalar_one_or_none()
 
-    if lote is None:
+    if lote_obj is None:
         raise HTTPException(status_code=404, detail="Lote no encontrado")
 
-    if lote.cantidad < cantidad:
+    if lote_obj.cantidad < cantidad:
         raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la entrega")
 
-    lote.cantidad -= cantidad
+    lote_obj.cantidad -= cantidad
     await session.commit()
-    await session.refresh(lote)
-    return lote
+    await session.refresh(lote_obj)
+    return lote_obj
 
 async def reportar_defecto_en_lote(session: AsyncSession, lote: str, tipo: str, cantidad: int):
     result = await session.execute(
         select(MedicamentoLote).where(MedicamentoLote.lote == lote)
     )
-    lote = result.scalar_one_or_none()
+    lote_obj = result.scalar_one_or_none()
     
-    if lote is None:
+    if lote_obj is None:
         raise HTTPException(status_code=404, detail="Lote no encontrado")
 
     if tipo == "defectuoso":
-        lote.cantidad_defectuosa += cantidad
+        lote_obj.cantidad_defectuosa += cantidad
     elif tipo == "vencido":
-        lote.cantidad_en_estado += cantidad  # si este campo es el correcto para vencido
+        lote_obj.cantidad_en_estado += cantidad  # si este campo es el correcto para vencido
     elif tipo == "mal_estado":
-        lote.cantidad_en_idea += cantidad  # si este campo representa "mal estado"
+        lote_obj.cantidad_en_idea += cantidad  # si este campo representa "mal estado"
     elif tipo == "envase_roto":
-        lote.cantidad_envase_roto += cantidad
+        lote_obj.cantidad_envase_roto += cantidad
     else:
         raise HTTPException(status_code=400, detail="Tipo de defecto no válido")
 
     await session.commit()
-    await session.refresh(lote)
-    return lote
+    await session.refresh(lote_obj)
+    return lote_obj
 
 async def get_lote_proximo_vencimiento_info(session: AsyncSession, id_principio: UUID):
     stmt = (
@@ -165,15 +175,111 @@ async def reservar_medicamento(session, lote: str, cantidad: int):
     result = await session.execute(
         select(MedicamentoLote).where(MedicamentoLote.lote == lote)
     )
-    lote = result.scalar_one_or_none()
+    lote_obj = result.scalar_one_or_none()
 
-    if lote is None:
+    if lote_obj is None:
         raise HTTPException(status_code=404, detail="Lote no encontrado")
 
-    if lote.cantidad < cantidad:
+    if lote_obj.cantidad < cantidad:
         raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la reserva")
 
-    lote.cantidad_reservada += cantidad
+    lote_obj.cantidad_reservada += cantidad
     await session.commit()
-    await session.refresh(lote)
-    return lote
+    await session.refresh(lote_obj)
+    return lote_obj
+
+# ---------------------------------------------------------
+# Nueva lógica de entrega por receta
+# ---------------------------------------------------------
+async def procesar_entrega_receta(
+    session: AsyncSession,
+    id_receta: UUID,
+    id_funcionario: UUID,
+    rut_retiro: str,
+    nombre_retiro: str
+) -> List[dict]:
+    # 1. Obtener la receta
+    result = await session.execute(
+        select(Receta).where(Receta.id_receta == id_receta)
+    )
+    receta = result.scalar_one_or_none()
+    if not receta:
+        raise HTTPException(status_code=404, detail="Receta no encontrada")
+
+    # 2. Obtener los principios de la prescripción asociada
+    result = await session.execute(
+        select(PrescripcionPrincipio)
+        .where(PrescripcionPrincipio.id_prescripcion == receta.id_prescripcion)
+    )
+    principios = result.scalars().all()
+
+    respuestas: List[dict] = []
+
+    # 3. Para cada principio, calcular unidades y procesar entrega
+    for pp in principios:
+        # Parseo de "X días"
+        try:
+            dias = int(pp.duracion.split()[0])
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Formato de duración inválido en principio {pp.id_principio}: {pp.duracion}"
+            )
+        unidades = dias // 2
+
+        # Obtener nombre de principio para la respuesta
+        res_princ = await session.execute(
+            select(PrincipioActivo).where(PrincipioActivo.id_principio == pp.id_principio)
+        )
+        princ_obj = res_princ.scalar_one_or_none()
+        nombre_princ = princ_obj.nombre if princ_obj else ""
+
+        if unidades <= 0:
+            respuestas.append({
+                "id_principio": pp.id_principio,
+                "nombre_principio": nombre_princ,
+                "cantidad_solicitada": unidades,
+                "cantidad_entregada": 0,
+                "estado": "sin_stock"
+            })
+            continue
+
+        # Buscar lote óptimo
+        info = await get_lote_proximo_vencimiento_info(session, pp.id_principio)
+        if not info:
+            respuestas.append({
+                "id_principio": pp.id_principio,
+                "nombre_principio": nombre_princ,
+                "cantidad_solicitada": unidades,
+                "cantidad_entregada": 0,
+                "estado": "sin_stock"
+            })
+            continue
+
+        # Descontar stock
+        lote_num = info["numero_lote"]
+        lote_actualizado = await entregar_medicamento(session, lote_num, unidades)
+
+        respuestas.append({
+            "id_principio": pp.id_principio,
+            "nombre_principio": info["nombre_principio"],
+            "nombre_medicamento": info["nombre_medicamento"],
+            "numero_lote": lote_num,
+            "cantidad_solicitada": unidades,
+            "cantidad_entregada": unidades,
+            "estado": "entregado"
+        })
+
+    # 4. Registrar la entrega en la tabla Entrega
+    entrega = Entrega(
+        id_receta=id_receta,
+        id_funcionario=id_funcionario,
+        fecha=datetime.now(timezone.utc),
+        estado="entregado",
+        rut_retiro=rut_retiro,
+        nombre_retiro=nombre_retiro
+    )
+    session.add(entrega)
+    await session.commit()
+
+    return respuestas
